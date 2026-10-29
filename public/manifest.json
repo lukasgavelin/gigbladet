@@ -1,0 +1,9 @@
+{
+  "name": "GigBladet – Körschema & Backstage",
+  "short_name": "GigBladet",
+  "description": "Det friktionsfria körschemat för musiker och ensembler",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b"
+}
