@@ -6,7 +6,7 @@ const THEME_STORAGE_KEY = 'gigbladet_theme';
 const THEME_CHANGE_EVENT = 'gigbladet-theme-change';
 
 export function getInitialTheme(): ThemeMode {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'light';
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
     if (saved === 'light' || saved === 'dark') {
@@ -15,7 +15,7 @@ export function getInitialTheme(): ThemeMode {
   } catch {
     // Ignore storage access errors
   }
-  return 'dark';
+  return 'light';
 }
 
 export function applyThemeToDocument(theme: ThemeMode): void {

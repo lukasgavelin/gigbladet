@@ -215,7 +215,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
           </section>
         )}
 
-        {/* Core Principles Footer */}
+        {/* Core Principles Section */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-zinc-200/70 dark:border-zinc-900 pt-10">
           <div className="space-y-2">
             <Smartphone className="w-4 h-4 text-amber-500 dark:text-amber-400" />
@@ -243,6 +243,24 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
             </p>
           </div>
         </section>
+
+        {/* Footer */}
+        <footer className="pt-6 border-t border-zinc-200/70 dark:border-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400" />
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">GigBladet</span>
+            <span>– Det friktionsfria körschemat för musiker</span>
+          </div>
+          <a
+            href="https://github.com/lukasgavelin/gigbladet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          >
+            <span>Öppen källkod & teknisk dokumentation</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </footer>
       </main>
     </div>
   );
