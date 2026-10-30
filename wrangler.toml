@@ -3,12 +3,7 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
-# I Cloudflare Pages kopplas D1-databasen smidigast direkt i Cloudflare Dashboard:
-# Gå till ditt Pages-projekt > Settings > Functions > D1 database bindings:
-# Variable name: DB -> Välj din databas (gigbladet-db)
-#
-# (Vill du ange den hårdkodad här istället: avkommentera och klistra in ditt riktiga UUID från Cloudflare)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "gigbladet-db"
-# database_id = "<ditt-riktiga-d1-uuid>"
+[[d1_databases]]
+binding = "DB"
+database_name = "gigbladet-db"
+database_id = "66db7367-55c0-49d4-9b18-3395e99b7349"
