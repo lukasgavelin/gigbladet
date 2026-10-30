@@ -1,19 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ArrowSquareOut,
   CalendarPlus,
   Check,
   Clock,
-  Edit3,
-  ExternalLink,
   Info,
   MapPin,
-  Navigation,
+  NavigationArrow,
+  PencilSimple,
   Phone,
-  Share2,
+  ShareNetwork,
   SlidersHorizontal,
-  Sparkles,
-  WifiOff,
-} from 'lucide-react';
+  Sparkle,
+  WifiSlash,
+} from '@phosphor-icons/react';
 import type { GigData } from '../types/gig.ts';
 import { evaluateSchedule, formatSwedishDate } from '../utils/time.ts';
 import { downloadGigCalendarFile } from '../utils/calendar.ts';
@@ -139,7 +139,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
           <div className="flex items-center gap-2">
             {(!isOnline || isOfflineFallback) && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-                <WifiOff className="w-3.5 h-3.5" />
+                <WifiSlash weight="duotone" className="w-3.5 h-3.5" />
                 Offline
               </span>
             )}
@@ -155,7 +155,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
                 }`}
                 title="Testa hur körschemat och live-pulsen ser ut vid olika klockslag"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <SlidersHorizontal weight="duotone" className="w-3.5 h-3.5" />
                 <span>{simEnabled ? formatSimTime(simMinutes) : 'Testa tid'}</span>
               </button>
             )}
@@ -168,7 +168,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
                 onClick={onExitPreview}
                 className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 dark:bg-amber-500 hover:opacity-90 text-white dark:text-zinc-950 font-medium px-3.5 py-1.5 text-xs transition-opacity cursor-pointer"
               >
-                <Edit3 className="w-3.5 h-3.5" />
+                <PencilSimple weight="bold" className="w-3.5 h-3.5" />
                 Tillbaka
               </button>
             ) : gig.adminToken ? (
@@ -177,7 +177,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
                 onClick={() => onNavigate(`/edit/${encodeURIComponent(gig.adminToken!)}`)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer"
               >
-                <Edit3 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                <PencilSimple weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 Redigera
               </button>
             ) : null}
@@ -232,13 +232,13 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-sm text-zinc-600 dark:text-zinc-400 pt-1">
               {gig.date.trim() && (
                 <div className="inline-flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                  <Clock weight="duotone" className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                   <span>{formatSwedishDate(gig.date)}</span>
                 </div>
               )}
               {(gig.venue.trim() || gig.address.trim()) && (
                 <div className="inline-flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                  <MapPin weight="duotone" className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                   <span>
                     {gig.venue.trim()}
                     {gig.venue.trim() && gig.address.trim()
@@ -252,7 +252,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
 
           {gig.generalNotes.trim() && (
             <div className="rounded-2xl bg-zinc-100/80 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/60 px-4 py-3.5 flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
-              <Info className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
+              <Info weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
               <p className="leading-relaxed">{gig.generalNotes}</p>
             </div>
           )}
@@ -321,7 +321,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
                 onClick={() => setSimEnabled(true)}
                 className="mt-3.5 inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <SlidersHorizontal weight="duotone" className="w-3.5 h-3.5" />
                 Förhandsvisa live-pulsen som på gig-dagen
               </button>
             )}
@@ -339,7 +339,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
                 referrerPolicy="no-referrer"
                 className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700 py-4 px-3 text-center transition-colors"
               >
-                <Navigation className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <NavigationArrow weight="duotone" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
                   Öppna karta
                 </span>
@@ -351,7 +351,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
               onClick={() => downloadGigCalendarFile(gig)}
               className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700 py-4 px-3 text-center transition-colors cursor-pointer"
             >
-              <CalendarPlus className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <CalendarPlus weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
                 Kalender (.ics)
               </span>
@@ -364,14 +364,14 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
             >
               {copiedKey === 'share' ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <Check weight="bold" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                     Kopierad
                   </span>
                 </>
               ) : (
                 <>
-                  <Share2 className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+                  <ShareNetwork weight="duotone" className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                   <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
                     Dela länk
                   </span>
@@ -401,7 +401,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
                     </div>
                     {cleanPhone && (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 shrink-0">
-                        <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <Phone weight="duotone" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Ring</span>
                       </span>
                     )}
@@ -495,7 +495,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
 
                         {item.location?.trim() && (
                           <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" />
+                            <MapPin weight="duotone" className="w-3.5 h-3.5 shrink-0" />
                             <span>{item.location}</span>
                           </div>
                         )}
@@ -535,7 +535,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
               onClick={() => onNavigate('/ny')}
               className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-amber-500/50 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-200 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <Sparkle weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>Skapa eget körschema gratis</span>
             </button>
             <a
@@ -545,7 +545,7 @@ export const MusicianView: React.FC<MusicianViewProps> = ({
               className="inline-flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors py-1"
             >
               <span>Öppen källkod på GitHub</span>
-              <ExternalLink className="w-3 h-3" />
+              <ArrowSquareOut weight="bold" className="w-3 h-3" />
             </a>
           </div>
         </footer>

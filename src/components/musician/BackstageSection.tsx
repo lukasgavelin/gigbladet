@@ -4,10 +4,10 @@ import {
   Check,
   Coffee,
   Copy,
-  DoorOpen,
+  Door,
   Palette,
-  Wifi,
-} from 'lucide-react';
+  WifiHigh,
+} from '@phosphor-icons/react';
 import type { BackstageInfo } from '../../types/gig.ts';
 
 interface BackstageSectionProps {
@@ -61,7 +61,7 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
             <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 p-5 flex flex-col justify-between gap-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  <DoorOpen className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <Door weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   <span>Dörrkod & Loge</span>
                 </div>
 
@@ -82,12 +82,12 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
                     >
                       {copiedKey === 'door' ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <Check weight="bold" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span>Kopierad</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                          <Copy weight="duotone" className="w-3.5 h-3.5 text-zinc-400" />
                           <span>Kopiera</span>
                         </>
                       )}
@@ -118,7 +118,7 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
             <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 p-5 flex flex-col justify-between gap-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                  <Wifi className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+                  <WifiHigh weight="duotone" className="w-4 h-4 text-sky-500 dark:text-sky-400" />
                   <span>Wi-Fi</span>
                 </div>
 
@@ -149,14 +149,14 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
                 >
                   {copiedKey === 'wifi' ? (
                     <>
-                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <Check weight="bold" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span className="text-emerald-600 dark:text-emerald-400">
                         Lösenord kopierat
                       </span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                      <Copy weight="duotone" className="w-3.5 h-3.5 text-zinc-400" />
                       <span>Kopiera Wi-Fi-lösenord</span>
                     </>
                   )}
@@ -171,7 +171,7 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
       {hasDressCode && (
         <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 p-5 space-y-3.5">
           <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <Palette className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Palette weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <span>Klädkod</span>
           </div>
 
@@ -215,7 +215,7 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
           {foodInfo && (
             <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 p-5 space-y-2">
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <Coffee className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                <Coffee weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 <span>Mat & Fika</span>
               </div>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
@@ -227,7 +227,7 @@ export const BackstageSection: React.FC<BackstageSectionProps> = ({
           {parkingInfo && (
             <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 p-5 space-y-2">
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <Car className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <Car weight="duotone" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Parkering & Lastkaj</span>
               </div>
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">

@@ -12,6 +12,7 @@ import {
 } from '../server/db.ts';
 import { generateGigCalendarIcs } from '../src/utils/calendar.ts';
 import { evaluateSchedule } from '../src/utils/time.ts';
+import { parseKey, getFrequency } from '../src/utils/audio.ts';
 import { DEMO_GIG_CHOIR } from '../src/data/demoData.ts';
 import { securityHeadersMiddleware } from '../server/securityHeaders.ts';
 import type { Request, Response } from 'express';
@@ -179,5 +180,36 @@ describe('Schedule & Live-puls Evaluation (src/utils/time.ts)', () => {
     const resDuring = evaluateSchedule(demo.schedule, demo.date, duringSet1, true);
     assert.equal(resDuring.pulse.mode, 'live_now');
     assert.equal(resDuring.pulse.currentItem?.title, 'Set 1 (Konsertstart)');
+  });
+});
+
+describe('Audio & Pitch Pipe Engine (src/utils/audio.ts)', () => {
+  it('parses musical keys including sharps, flats, minor, and Nordic H notation', () => {
+    assert.equal(parseKey('C')?.semitone, 0);
+    assert.equal(parseKey('Cm')?.semitone, 0);
+    assert.equal(parseKey('C#m')?.semitone, 1);
+    assert.equal(parseKey('Db')?.semitone, 1);
+    assert.equal(parseKey('D-dur')?.semitone, 2);
+    assert.equal(parseKey('Eb')?.semitone, 3);
+    assert.equal(parseKey('E moll')?.semitone, 4);
+    assert.equal(parseKey('F#m')?.semitone, 6);
+    assert.equal(parseKey('A')?.semitone, 9);
+    assert.equal(parseKey('Am')?.semitone, 9);
+    assert.equal(parseKey('Bb')?.semitone, 10);
+    assert.equal(parseKey('Bbm')?.semitone, 10);
+    assert.equal(parseKey('H')?.semitone, 11);
+    assert.equal(parseKey('Hm')?.semitone, 11);
+    assert.equal(parseKey('InvalidKey'), null);
+    assert.equal(parseKey(''), null);
+  });
+
+  it('calculates accurate musical frequencies for pitch pipe octaves', () => {
+    const a3 = getFrequency(9, 3);
+    const a4 = getFrequency(9, 4);
+    const c4 = getFrequency(0, 4);
+
+    assert.equal(Math.round(a3), 220);
+    assert.equal(Math.round(a4), 440);
+    assert.equal(Math.round(c4), 262);
   });
 });

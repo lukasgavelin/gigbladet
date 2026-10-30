@@ -17,8 +17,8 @@
     "d1:migrate:remote": "wrangler d1 execute gigbladet-db --remote --file=./schema.sql"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "express": "^4.21.2",
-    "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

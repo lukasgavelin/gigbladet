@@ -1,15 +1,15 @@
 import React from 'react';
 import {
   ArrowRight,
-  Edit3,
-  ExternalLink,
-  KeyRound,
+  ArrowSquareOut,
+  Broadcast,
+  DeviceMobile,
+  Key,
+  PencilSimple,
   Plus,
-  Radio,
   ShieldCheck,
-  Smartphone,
-  WifiOff,
-} from 'lucide-react';
+  WifiSlash,
+} from '@phosphor-icons/react';
 import { getRecentGigs } from '../utils/storage.ts';
 import { formatSwedishDate } from '../utils/time.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
@@ -47,7 +47,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('/ny')}
               className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 dark:bg-amber-500 hover:opacity-90 text-white dark:text-zinc-950 font-semibold px-4 py-1.5 text-xs transition-opacity cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus weight="bold" className="w-3.5 h-3.5" />
               Nytt körschema
             </button>
           </div>
@@ -76,7 +76,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-zinc-900 dark:bg-amber-500 hover:opacity-90 text-white dark:text-zinc-950 font-semibold px-7 py-3.5 text-sm transition-opacity cursor-pointer"
             >
               <span>Skapa nytt gig-blad</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight weight="bold" className="w-4 h-4" />
             </button>
 
             <button
@@ -84,7 +84,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               onClick={() => onNavigate('/g/demo-soul')}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-medium px-6 py-3.5 text-sm transition-colors cursor-pointer"
             >
-              <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Broadcast weight="duotone" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Öppna demoläge</span>
             </button>
           </div>
@@ -120,7 +120,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/g/demo-soul')}
                   className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100 hover:opacity-90 text-white dark:text-zinc-950 font-medium px-4 py-2 text-xs transition-opacity cursor-pointer"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ArrowSquareOut weight="bold" className="w-3.5 h-3.5" />
                   Musiker-vy
                 </button>
                 <button
@@ -128,7 +128,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/edit/adm_demo_soul_secret')}
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  <PencilSimple weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                   Redigera demo
                 </button>
               </div>
@@ -152,7 +152,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/g/demo-kor')}
                   className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100 hover:opacity-90 text-white dark:text-zinc-950 font-medium px-4 py-2 text-xs transition-opacity cursor-pointer"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ArrowSquareOut weight="bold" className="w-3.5 h-3.5" />
                   Musiker-vy
                 </button>
                 <button
@@ -160,7 +160,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                   onClick={() => onNavigate('/edit/adm_demo_kor_secret')}
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  <PencilSimple weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                   Redigera demo
                 </button>
               </div>
@@ -204,7 +204,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                         title="Redigera med sparad admin-länk"
                         className="rounded-full border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 inline-flex items-center gap-1 cursor-pointer"
                       >
-                        <KeyRound className="w-3 h-3" />
+                        <Key weight="duotone" className="w-3 h-3" />
                         Admin
                       </button>
                     )}
@@ -218,14 +218,14 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         {/* Core Principles Section */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-zinc-200/70 dark:border-zinc-900 pt-10">
           <div className="space-y-2">
-            <Smartphone className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <DeviceMobile weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Noll friktion</h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Inga appar att ladda ner, inga konton och inga lösenord för ensemblen.
             </p>
           </div>
           <div className="space-y-2">
-            <WifiOff className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <WifiSlash weight="duotone" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
               Offline backstage
             </h3>
@@ -234,7 +234,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
             </p>
           </div>
           <div className="space-y-2">
-            <ShieldCheck className="w-4 h-4 text-sky-500 dark:text-sky-400" />
+            <ShieldCheck weight="duotone" className="w-4 h-4 text-sky-500 dark:text-sky-400" />
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
               Endast det du fyller i syns
             </h3>
@@ -258,7 +258,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
             className="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
           >
             <span>Öppen källkod & teknisk dokumentation</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ArrowSquareOut weight="bold" className="w-3.5 h-3.5" />
           </a>
         </footer>
       </main>

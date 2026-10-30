@@ -1,22 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ArrowCounterClockwise,
   ArrowDown,
+  ArrowsDownUp,
   ArrowUp,
-  ArrowUpDown,
   Check,
-  CloudOff,
+  CloudSlash,
   Copy,
   Eye,
-  KeyRound,
-  Loader2,
+  FloppyDisk,
+  Key,
   Plus,
-  RotateCcw,
-  Save,
-  Share2,
+  ShareNetwork,
+  Spinner,
   Star,
-  Trash2,
+  Trash,
   Users,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type {
   ContactPerson,
   DressCodeColor,
@@ -415,13 +415,13 @@ export const EditorView: React.FC<EditorViewProps> = ({
           <div className="flex items-center gap-2">
             {saveState === 'offline_queued' && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-                <CloudOff className="w-3.5 h-3.5" />
+                <CloudSlash weight="duotone" className="w-3.5 h-3.5" />
                 Sparat lokalt
               </span>
             )}
             {saveState === 'saved' && savedGig && (
               <span className="hidden sm:inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 px-2">
-                <Check className="w-3.5 h-3.5" />
+                <Check weight="bold" className="w-3.5 h-3.5" />
                 Sparat
               </span>
             )}
@@ -435,7 +435,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 title="Rensa alla fält"
                 className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <ArrowCounterClockwise weight="duotone" className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Rensa</span>
               </button>
             )}
@@ -445,7 +445,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
               onClick={() => setIsPreview(true)}
               className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
             >
-              <Eye className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <Eye weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>Förhandsgranska</span>
             </button>
 
@@ -455,7 +455,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 onClick={() => setShowShareModal(true)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
               >
-                <Share2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <ShareNetwork weight="duotone" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Dela</span>
               </button>
             )}
@@ -468,12 +468,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
             >
               {saveState === 'saving' ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Spinner weight="bold" className="w-3.5 h-3.5 animate-spin" />
                   <span>Sparar...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5" />
+                  <FloppyDisk weight="duotone" className="w-3.5 h-3.5" />
                   <span>{savedGig ? 'Spara' : 'Publicera'}</span>
                 </>
               )}
@@ -523,7 +523,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
               <div className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 p-3.5 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Users weight="duotone" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     1. Länk till musikerna
                   </span>
                   <button
@@ -533,12 +533,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
                   >
                     {copiedInline === 'public' ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <Check weight="bold" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Kopierad</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                        <Copy weight="duotone" className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Kopiera</span>
                       </>
                     )}
@@ -553,7 +553,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
               <div className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 p-3.5 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                    <Key weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                     2. Länk för att ändra (Admin)
                   </span>
                   <button
@@ -563,12 +563,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
                   >
                     {copiedInline === 'admin' ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <Check weight="bold" className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         <span>Kopierad</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                        <Copy weight="duotone" className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Kopiera</span>
                       </>
                     )}
@@ -715,7 +715,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 onClick={sortScheduleChronologically}
                 className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
               >
-                <ArrowUpDown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                <ArrowsDownUp weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 Sortera kronologiskt
               </button>
             )}
@@ -775,7 +775,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                           : 'border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
                       }`}
                     >
-                      <Star className="w-3.5 h-3.5" />
+                      <Star weight={item.highlight ? 'fill' : 'duotone'} className="w-3.5 h-3.5" />
                     </button>
 
                     <button
@@ -785,7 +785,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                       className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-white disabled:opacity-30 cursor-pointer"
                       aria-label="Flytta upp"
                     >
-                      <ArrowUp className="w-3.5 h-3.5" />
+                      <ArrowUp weight="bold" className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
@@ -794,7 +794,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                       className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-white disabled:opacity-30 cursor-pointer"
                       aria-label="Flytta ner"
                     >
-                      <ArrowDown className="w-3.5 h-3.5" />
+                      <ArrowDown weight="bold" className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
@@ -802,7 +802,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                       className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
                       aria-label="Ta bort rad"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash weight="duotone" className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -838,7 +838,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
             onClick={addScheduleItem}
             className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 hover:border-amber-500/60 py-3 text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Plus weight="bold" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             Lägg till hållpunkt
           </button>
         </section>
@@ -982,7 +982,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                         className="text-zinc-400 hover:text-rose-500 cursor-pointer"
                         aria-label="Ta bort färg"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash weight="duotone" className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}
@@ -1107,7 +1107,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                       className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2.5 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
                       aria-label="Ta bort kontakt"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash weight="duotone" className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -1120,7 +1120,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
             onClick={addContact}
             className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Plus weight="bold" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Lägg till kontaktperson
           </button>
         </section>
@@ -1207,7 +1207,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                         className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-white disabled:opacity-30 cursor-pointer"
                         aria-label="Flytta upp låt"
                       >
-                        <ArrowUp className="w-3.5 h-3.5" />
+                        <ArrowUp weight="bold" className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
@@ -1216,7 +1216,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                         className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 text-zinc-400 hover:text-zinc-800 dark:hover:text-white disabled:opacity-30 cursor-pointer"
                         aria-label="Flytta ner låt"
                       >
-                        <ArrowDown className="w-3.5 h-3.5" />
+                        <ArrowDown weight="bold" className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
@@ -1224,7 +1224,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                         className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
                         aria-label="Ta bort låt"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash weight="duotone" className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1263,7 +1263,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
             onClick={addSetlistItem}
             className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-800 hover:border-amber-500/60 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Plus weight="bold" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             Lägg till låt i setlisten
           </button>
         </section>

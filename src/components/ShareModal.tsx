@@ -1,15 +1,15 @@
 import React from 'react';
 import {
+  ArrowSquareOut,
+  ChatCircleText,
   Check,
   Copy,
-  ExternalLink,
-  KeyRound,
-  MessageSquare,
-  Share2,
-  Sparkles,
+  Key,
+  ShareNetwork,
+  Sparkle,
   Users,
   X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type { GigData } from '../types/gig.ts';
 import { formatSwedishDate } from '../utils/time.ts';
 import { useCopyFeedback } from '../hooks/useCopyFeedback.ts';
@@ -58,7 +58,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkle weight="duotone" className="w-3.5 h-3.5" />
               Redo att delas
             </div>
             <h2 id="share-modal-title" className="text-xl font-bold text-zinc-900 dark:text-white">
@@ -74,7 +74,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
             className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Stäng"
           >
-            <X className="w-5 h-5" />
+            <X weight="bold" className="w-5 h-5" />
           </button>
         </div>
 
@@ -83,7 +83,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
           <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/60 p-5 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <Users weight="duotone" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 1. Länk till musikerna
               </span>
               <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
@@ -108,12 +108,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
               >
                 {copiedKey === 'public' ? (
                   <>
-                    <Check className="w-4 h-4" />
+                    <Check weight="bold" className="w-4 h-4" />
                     Kopierad
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4" />
+                    <Copy weight="duotone" className="w-4 h-4" />
                     Kopiera länk
                   </>
                 )}
@@ -128,12 +128,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
               >
                 {copiedKey === 'message' ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Check weight="bold" className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     Meddelande kopierat
                   </>
                 ) : (
                   <>
-                    <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
+                    <ChatCircleText weight="duotone" className="w-3.5 h-3.5 text-zinc-400" />
                     Kopiera text för SMS / chatt
                   </>
                 )}
@@ -147,7 +147,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
                 }}
                 className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                <ArrowSquareOut weight="bold" className="w-3.5 h-3.5 text-zinc-400" />
                 Öppna musiker-vyn
               </button>
 
@@ -157,7 +157,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
                   onClick={handleNativeShare}
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
                 >
-                  <Share2 className="w-3.5 h-3.5 text-zinc-400" />
+                  <ShareNetwork weight="duotone" className="w-3.5 h-3.5 text-zinc-400" />
                   Dela
                 </button>
               )}
@@ -169,7 +169,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
             <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/60 p-5 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  <KeyRound className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <Key weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                   2. Länk för att ändra
                 </span>
                 <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full">
@@ -194,12 +194,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ gig, onClose, onNavigate
                 >
                   {copiedKey === 'admin' ? (
                     <>
-                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <Check weight="bold" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       Kopierad
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" />
+                      <Copy weight="duotone" className="w-4 h-4" />
                       Kopiera admin-länk
                     </>
                   )}

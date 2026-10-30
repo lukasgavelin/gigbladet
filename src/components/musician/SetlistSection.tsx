@@ -1,6 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ListMusic } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { CaretDown, CaretUp, Queue } from '@phosphor-icons/react';
 import type { SetlistItem } from '../../types/gig.ts';
+import {
+  parseKey,
+  playPitchPipeSequence,
+  startMetronome,
+  type MetronomeController,
+} from '../../utils/audio.ts';
+import { MetronomeIcon, SoundWaveIcon } from '../icons/MusicIcons.tsx';
 
 interface SetlistSectionProps {
   enabled: boolean;
@@ -13,11 +20,105 @@ const MAX_BPM = 240;
 export const SetlistSection: React.FC<SetlistSectionProps> = ({ enabled, setlist }) => {
   const [setlistOpen, setSetlistOpen] = useState<boolean>(true);
   const [activeBpmId, setActiveBpmId] = useState<string | null>(null);
+  const [activeKeyId, setActiveKeyId] = useState<string | null>(null);
+  const [beatPulse, setBeatPulse] = useState<boolean>(false);
+
+  const metronomeRef = useRef<MetronomeController | null>(null);
+  const pitchCancelRef = useRef<(() => void) | null>(null);
+  const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Stop any active audio when unmounting
+  useEffect(() => {
+    return () => {
+      if (metronomeRef.current) {
+        metronomeRef.current.stop();
+        metronomeRef.current = null;
+      }
+      if (pitchCancelRef.current) {
+        pitchCancelRef.current();
+        pitchCancelRef.current = null;
+      }
+      if (pulseTimeoutRef.current) {
+        clearTimeout(pulseTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const validSongs = useMemo(
     () => setlist.filter((s) => s.title.trim().length > 0),
     [setlist]
   );
+
+  const stopAllAudio = () => {
+    if (metronomeRef.current) {
+      metronomeRef.current.stop();
+      metronomeRef.current = null;
+    }
+    if (pitchCancelRef.current) {
+      pitchCancelRef.current();
+      pitchCancelRef.current = null;
+    }
+    setActiveBpmId(null);
+    setActiveKeyId(null);
+    setBeatPulse(false);
+  };
+
+  const handleToggleBpm = (songId: string, tempoStr: string) => {
+    const numericBpm = Number.parseInt(tempoStr, 10);
+    if (Number.isNaN(numericBpm) || numericBpm < MIN_BPM || numericBpm > MAX_BPM) {
+      return;
+    }
+
+    // If this song's BPM is already ticking, stop it
+    if (activeBpmId === songId) {
+      stopAllAudio();
+      return;
+    }
+
+    // Stop any other sound before starting
+    stopAllAudio();
+
+    setActiveBpmId(songId);
+
+    let beatsCount = 0;
+    const maxBeats = 64; // Auto-stop after ~16 bars of 4/4 so it doesn't drain battery if forgotten
+
+    metronomeRef.current = startMetronome(numericBpm, () => {
+      setBeatPulse(true);
+      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+      pulseTimeoutRef.current = setTimeout(() => {
+        setBeatPulse(false);
+      }, 100);
+
+      beatsCount++;
+      if (beatsCount >= maxBeats) {
+        stopAllAudio();
+      }
+    });
+  };
+
+  const handlePlayKey = (songId: string, keyStr: string) => {
+    const parsed = parseKey(keyStr);
+    if (!parsed) return;
+
+    // If currently playing this key, stop it
+    if (activeKeyId === songId) {
+      stopAllAudio();
+      return;
+    }
+
+    // Stop other audio
+    stopAllAudio();
+
+    setActiveKeyId(songId);
+
+    const cancel = playPitchPipeSequence(keyStr, () => {
+      setActiveKeyId((current) => (current === songId ? null : current));
+      pitchCancelRef.current = null;
+    });
+
+    pitchCancelRef.current = cancel;
+  };
 
   if (!enabled || validSongs.length === 0) return null;
 
@@ -31,7 +132,7 @@ export const SetlistSection: React.FC<SetlistSectionProps> = ({ enabled, setlist
           aria-expanded={setlistOpen}
         >
           <div className="flex items-center gap-3">
-            <ListMusic className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            <Queue weight="duotone" className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <div>
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 Setlist / Repertoar
@@ -42,7 +143,11 @@ export const SetlistSection: React.FC<SetlistSectionProps> = ({ enabled, setlist
             </div>
           </div>
           <span className="rounded-full p-2 text-zinc-400 dark:text-zinc-500">
-            {setlistOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {setlistOpen ? (
+              <CaretUp weight="bold" className="w-4 h-4" />
+            ) : (
+              <CaretDown weight="bold" className="w-4 h-4" />
+            )}
           </span>
         </button>
 
@@ -52,8 +157,11 @@ export const SetlistSection: React.FC<SetlistSectionProps> = ({ enabled, setlist
               const numericBpm = Number.parseInt(song.tempo, 10);
               const hasValidBpm =
                 !Number.isNaN(numericBpm) && numericBpm >= MIN_BPM && numericBpm <= MAX_BPM;
-              const isBpmBlinking = activeBpmId === song.id && hasValidBpm;
-              const beatIntervalMs = hasValidBpm ? Math.round(60000 / numericBpm) : 500;
+              const isBpmActive = activeBpmId === song.id;
+
+              const parsedKey = parseKey(song.key);
+              const isKeyPlayable = Boolean(parsedKey);
+              const isKeyActive = activeKeyId === song.id;
 
               return (
                 <React.Fragment key={song.id}>
@@ -72,36 +180,68 @@ export const SetlistSection: React.FC<SetlistSectionProps> = ({ enabled, setlist
                           {song.title}
                         </span>
                         <div className="flex items-center gap-1.5">
+                          {/* Key / Tonart Badge & Stämpipa */}
                           {song.key.trim() && (
-                            <span className="rounded-md bg-amber-500/10 dark:bg-amber-500/15 px-2 py-0.5 text-xs font-mono font-medium text-amber-700 dark:text-amber-300">
-                              {song.key}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                isKeyPlayable && handlePlayKey(song.id, song.key)
+                              }
+                              disabled={!isKeyPlayable}
+                              title={
+                                isKeyPlayable
+                                  ? isKeyActive
+                                    ? 'Klicka för att tysta tonen'
+                                    : `Stämpipa: Spela tonarten ${song.key} (låg oktav, sedan hög)`
+                                  : undefined
+                              }
+                              className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-mono font-medium transition-all ${
+                                isKeyActive
+                                  ? 'bg-amber-500 text-zinc-950 font-bold ring-2 ring-amber-400/50 scale-105'
+                                  : isKeyPlayable
+                                    ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 active:scale-95 cursor-pointer'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 cursor-default'
+                              }`}
+                            >
+                              {isKeyActive && (
+                                <SoundWaveIcon className="w-3.5 h-3.5 animate-pulse text-zinc-950" />
+                              )}
+                              <span>{song.key}</span>
+                            </button>
                           )}
+
+                          {/* Tempo / BPM Metronome Ticker */}
                           {song.tempo.trim() && (
                             <button
                               type="button"
                               onClick={() =>
-                                hasValidBpm &&
-                                setActiveBpmId((prev) => (prev === song.id ? null : song.id))
+                                hasValidBpm && handleToggleBpm(song.id, song.tempo)
                               }
                               title={
                                 hasValidBpm
-                                  ? 'Klicka för visuell tempoblink (ljudlös metronom)'
+                                  ? isBpmActive
+                                    ? 'Klicka för att stoppa metronomen'
+                                    : `Metronom: Ticka ${song.tempo} BPM (med ljud & visuell puls)`
                                   : undefined
                               }
-                              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-mono transition-colors ${
-                                isBpmBlinking
-                                  ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-semibold'
-                                  : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
-                              } ${hasValidBpm ? 'cursor-pointer' : ''}`}
+                              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-mono transition-all ${
+                                isBpmActive
+                                  ? beatPulse
+                                    ? 'border-emerald-400 bg-emerald-500 text-zinc-950 font-bold scale-105 ring-2 ring-emerald-400/50'
+                                    : 'border-emerald-500/50 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold'
+                                  : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                              } ${hasValidBpm ? 'cursor-pointer active:scale-95' : 'cursor-default'}`}
                             >
-                              {isBpmBlinking && (
-                                <span
-                                  className="h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping"
-                                  style={{ animationDuration: `${beatIntervalMs}ms` }}
-                                />
-                              )}
-                              {song.tempo}
+                              <MetronomeIcon
+                                className={`w-3.5 h-3.5 ${
+                                  isBpmActive
+                                    ? beatPulse
+                                      ? 'text-zinc-950 rotate-6 transition-transform'
+                                      : 'text-emerald-600 dark:text-emerald-300 -rotate-6 transition-transform'
+                                    : 'text-zinc-400 dark:text-zinc-500'
+                                }`}
+                              />
+                              <span>{song.tempo}</span>
                             </button>
                           )}
                         </div>

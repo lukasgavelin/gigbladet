@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from '@phosphor-icons/react';
 import { useTheme } from '../hooks/useTheme.ts';
 
 export const ThemeToggle: React.FC = () => {
@@ -16,12 +16,12 @@ export const ThemeToggle: React.FC = () => {
     >
       {isDark ? (
         <>
-          <Sun className="w-3.5 h-3.5 text-amber-400" />
+          <Sun weight="duotone" className="w-3.5 h-3.5 text-amber-400" />
           <span className="hidden sm:inline">Ljust</span>
         </>
       ) : (
         <>
-          <Moon className="w-3.5 h-3.5 text-zinc-600" />
+          <Moon weight="duotone" className="w-3.5 h-3.5 text-zinc-600" />
           <span className="hidden sm:inline">Mörkt</span>
         </>
       )}
