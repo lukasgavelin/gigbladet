@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import type { GigData } from './types/gig.ts';
-import { GIG_PRESETS, getTodayDateString } from './data/presets.ts';
+import { DEMO_GIGS, getTodayDateString } from './data/demoData.ts';
 import { loadPublicGigCache, savePublicGigCache } from './utils/storage.ts';
 import { fetchAdminGig, fetchPublicGig } from './services/gigApi.ts';
 import { LandingView } from './components/LandingView.tsx';
@@ -17,25 +17,14 @@ function safeDecodeParam(raw: string): string {
 }
 
 function getFallbackDemoGig(publicId: string): GigData | null {
-  if (publicId === 'demo-soul') {
-    const preset = GIG_PRESETS.find((p) => p.key === 'band')!;
-    return {
-      ...preset.defaultData,
-      date: getTodayDateString(),
-      publicId: 'demo-soul',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  if (publicId === 'demo-kor') {
-    const preset = GIG_PRESETS.find((p) => p.key === 'choir')!;
-    return {
-      ...preset.defaultData,
-      date: getTodayDateString(),
-      publicId: 'demo-kor',
-      updatedAt: new Date().toISOString(),
-    };
-  }
-  return null;
+  const dummy = DEMO_GIGS[publicId];
+  if (!dummy) return null;
+  return {
+    ...dummy,
+    date: getTodayDateString(),
+    publicId,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 export const App: React.FC = () => {

@@ -12,7 +12,7 @@ import {
 } from '../server/db.ts';
 import { generateGigCalendarIcs } from '../src/utils/calendar.ts';
 import { evaluateSchedule } from '../src/utils/time.ts';
-import { GIG_PRESETS } from '../src/data/presets.ts';
+import { DEMO_GIG_CHOIR } from '../src/data/demoData.ts';
 import { securityHeadersMiddleware } from '../server/securityHeaders.ts';
 import type { Request, Response } from 'express';
 
@@ -103,7 +103,7 @@ describe('Database & Admin Token Security (server/db.ts)', () => {
   });
 
   it('creates gigs with high-entropy adminToken and updates reflected on public view', () => {
-    const validated = validateAndSanitizeGigInput(GIG_PRESETS[0].defaultData);
+    const validated = validateAndSanitizeGigInput(DEMO_GIG_CHOIR);
     assert.ok(validated.data);
 
     const created = createGig(validated.data);

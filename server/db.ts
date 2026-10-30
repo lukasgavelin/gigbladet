@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { GigData } from '../src/types/gig.ts';
-import { GIG_PRESETS, getTodayDateString } from '../src/data/presets.ts';
+import { DEMO_GIG_SOUL, DEMO_GIG_CHOIR, getTodayDateString } from '../src/data/demoData.ts';
 import { isValidIdentifier, type SanitizedGigInput } from './validation.ts';
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
@@ -84,16 +84,13 @@ function timingSafeStringMatch(a: string, b: string): boolean {
 
 export function seedDemoGigs(): void {
   const now = new Date().toISOString();
-  const bandPreset = GIG_PRESETS.find((p) => p.key === 'band');
-  const choirPreset = GIG_PRESETS.find((p) => p.key === 'choir');
-  if (!bandPreset || !choirPreset) return;
 
   const insertStmt = db.prepare(
     'INSERT OR IGNORE INTO gigs (public_id, admin_token, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
   );
 
   const soulGig: GigData = {
-    ...bandPreset.defaultData,
+    ...DEMO_GIG_SOUL,
     date: getTodayDateString(),
     publicId: 'demo-soul',
     updatedAt: now,
@@ -101,7 +98,7 @@ export function seedDemoGigs(): void {
   insertStmt.run('demo-soul', 'adm_demo_soul_secret', JSON.stringify(soulGig), now, now);
 
   const choirGig: GigData = {
-    ...choirPreset.defaultData,
+    ...DEMO_GIG_CHOIR,
     date: getTodayDateString(),
     publicId: 'demo-kor',
     updatedAt: now,

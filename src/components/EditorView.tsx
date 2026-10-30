@@ -24,7 +24,7 @@ import type {
   ScheduleItem,
   SetlistItem,
 } from '../types/gig.ts';
-import { createEmptyGigFormData } from '../data/presets.ts';
+import { createEmptyGigFormData } from '../data/demoData.ts';
 import {
   clearAdminDraft,
   loadAdminDraft,

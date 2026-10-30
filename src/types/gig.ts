@@ -57,13 +57,3 @@ export interface GigData {
   setlist: SetlistItem[];
   updatedAt: string;
 }
-
-export type PresetKey = 'choir' | 'band' | 'acoustic';
-
-export interface GigPreset {
-  key: PresetKey;
-  name: string;
-  subtitle: string;
-  badge: string;
-  defaultData: Omit<GigData, 'publicId' | 'adminToken' | 'updatedAt'>;
-}

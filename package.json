@@ -11,7 +11,10 @@
     "build": "vite build",
     "start": "NODE_ENV=production node --experimental-strip-types --experimental-sqlite server/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --experimental-sqlite --test tests/securityAndCleanCode.test.ts"
+    "test": "node --experimental-strip-types --experimental-sqlite --test tests/securityAndCleanCode.test.ts",
+    "pages:dev": "wrangler pages dev dist --d1=DB=gigbladet-db",
+    "d1:migrate:local": "wrangler d1 execute gigbladet-db --local --file=./schema.sql",
+    "d1:migrate:remote": "wrangler d1 execute gigbladet-db --remote --file=./schema.sql"
   },
   "dependencies": {
     "express": "^4.21.2",

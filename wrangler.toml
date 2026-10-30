@@ -1,0 +1,13 @@
+name = "gigbladet"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+# Cloudflare D1 databas-bindning för GigBladet
+# 1. Skapa databasen i Cloudflare: npx wrangler d1 create gigbladet-db
+# 2. Kopiera 'database_id' hit
+# 3. Applicera schemat: npx wrangler d1 execute gigbladet-db --remote --file=./schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "gigbladet-db"
+database_id = "replace-with-your-d1-database-id"
