@@ -41,7 +41,7 @@ Ett av GigBladets viktigaste designmål är att minimera datainsamling och frikt
 4. **Vem kan se datan i databasen?**
  - **Andra användare:** Kan **inte** se dina gig om du inte delar länken med dem.
  - **Den som driftar databasen:** Informationen (tider, portkod, telefonnummer, setlist) lagras som JSON i databasen för att musikerna ska kunna nå länken från vilken mobil som helst. Den som äger driftskontot (t.ex. Cloudflare D1-kontot) har teknisk access till själva databasfilen. 
- - *Tips:* Om din ensemble har strikta sekretesskrav kan du med fördel driftsätta en egen helt privat instans med stegen nedan – appen är 100 % öppen källkod.
+ - *Tips:* Om din ensemble har strikta sekretesskrav kan du driftsätta en egen privat instans för icke-kommersiellt bruk med stegen nedan.
 
 ---
 
@@ -98,3 +98,9 @@ Appen är förberedd för fullstack-distribution på **Cloudflare Pages** med **
  - **Build command:** `npm run build`
  - **Build output directory:** `dist`
 4. Klart! Cloudflare bygger och driftsätter automatiskt din app vid varje push till `main`.
+
+---
+
+## Licens
+
+Licensierad under [PolyForm Noncommercial License 1.0.0](./LICENSE) – fri för personligt, ideellt och icke-kommersiellt bruk. Kommersiell användning kräver separat licens.
