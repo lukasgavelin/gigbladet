@@ -2,11 +2,20 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Spinner, WarningCircle } from '@phosphor-icons/react';
 import type { GigData } from './types/gig.ts';
 import { DEMO_GIGS, getTodayDateString } from './data/demoData.ts';
-import { loadPublicGigCache, savePublicGigCache } from './utils/storage.ts';
-import { fetchAdminGig, fetchPublicGig } from './services/gigApi.ts';
+import {
+  loadPublicGigCache,
+  removePublicGigCache,
+  savePublicGigCache,
+} from './utils/storage.ts';
+import { ApiError, fetchAdminGig, fetchPublicGig } from './services/gigApi.ts';
 import { LandingView } from './components/LandingView.tsx';
 import { MusicianView } from './components/MusicianView.tsx';
-import { EditorView } from './components/EditorView.tsx';
+
+const EditorView = React.lazy(() =>
+  import('./components/EditorView.tsx').then((module) => ({
+    default: module.EditorView,
+  }))
+);
 
 function safeDecodeParam(raw: string): string {
   try {
@@ -74,8 +83,17 @@ export const App: React.FC = () => {
             savePublicGigCache(fresh);
             setLoading(false);
           }
-        } catch {
+        } catch (err) {
           if (!cancelled) {
+            if (err instanceof ApiError && err.status === 404) {
+              removePublicGigCache(publicId);
+              setGigData(null);
+              setError(
+                'Körschemat har tagits bort av arrangören eller har passerat sitt utgångsdatum (60 dagar efter speldatum).'
+              );
+              setLoading(false);
+              return;
+            }
             if (cached) {
               setGigData(cached);
               setIsOfflineFallback(true);
@@ -172,23 +190,41 @@ export const App: React.FC = () => {
   if (pathname.startsWith('/edit/')) {
     const adminToken = safeDecodeParam(pathname.slice(6).replace(/\/+$/, ''));
     return (
-      <EditorView
-        key={adminToken}
-        initialGig={gigData}
-        adminToken={adminToken}
-        onNavigate={navigate}
-        onGigSaved={(saved) => setGigData(saved)}
-      />
+      <React.Suspense
+        fallback={
+          <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-6 gap-3">
+            <Spinner weight="bold" className="w-6 h-6 text-amber-500 animate-spin" />
+            <p className="text-xs text-zinc-500 font-medium">Laddar redigeringsverktyg...</p>
+          </div>
+        }
+      >
+        <EditorView
+          key={adminToken}
+          initialGig={gigData}
+          adminToken={adminToken}
+          onNavigate={navigate}
+          onGigSaved={(saved) => setGigData(saved)}
+        />
+      </React.Suspense>
     );
   }
 
-  if (pathname === '/ny') {
+  if (pathname === '/ny' || pathname.startsWith('/ny')) {
     return (
-      <EditorView
-        key="new-gig"
-        onNavigate={navigate}
-        onGigSaved={(saved) => setGigData(saved)}
-      />
+      <React.Suspense
+        fallback={
+          <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-6 gap-3">
+            <Spinner weight="bold" className="w-6 h-6 text-amber-500 animate-spin" />
+            <p className="text-xs text-zinc-500 font-medium">Laddar redigeringsverktyg...</p>
+          </div>
+        }
+      >
+        <EditorView
+          key={`new-gig-${pathname}`}
+          onNavigate={navigate}
+          onGigSaved={(saved) => setGigData(saved)}
+        />
+      </React.Suspense>
     );
   }
 

@@ -3,9 +3,9 @@ import {
   ArrowRight,
   ArrowSquareOut,
   Broadcast,
+  Copy,
   DeviceMobile,
   Key,
-  PencilSimple,
   Plus,
   ShieldCheck,
   WifiSlash,
@@ -125,11 +125,11 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => onNavigate('/edit/adm_demo_soul_secret')}
+                  onClick={() => onNavigate('/ny?mall=demo-soul')}
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
                 >
-                  <PencilSimple weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                  Redigera demo
+                  <Copy weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  Skapa utifrån demo
                 </button>
               </div>
             </div>
@@ -157,11 +157,11 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => onNavigate('/edit/adm_demo_kor_secret')}
+                  onClick={() => onNavigate('/ny?mall=demo-kor')}
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
                 >
-                  <PencilSimple weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                  Redigera demo
+                  <Copy weight="duotone" className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  Skapa utifrån demo
                 </button>
               </div>
             </div>
@@ -242,6 +242,21 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               Fält och sektioner som du lämnar tomma döljs automatiskt i musikernas vy.
             </p>
           </div>
+        </section>
+
+        {/* Transparency & Privacy Notice */}
+        <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/70 dark:bg-zinc-900/40 p-5 space-y-2 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+          <div className="flex items-center gap-2 font-semibold text-zinc-800 dark:text-zinc-200">
+            <ShieldCheck weight="duotone" className="w-4 h-4 text-amber-500" />
+            <span>Om hosting & data i GigBladet</span>
+          </div>
+          <p>
+            GigBladet är ett 100&nbsp;% gratis och oberoende verktyg som vi driftar för musiker och ensembler.
+            Vi samlar inga kakor, visar inga annonser och säljer aldrig data till tredje part.
+          </p>
+          <p>
+            För att körschemat ska kunna nås på alla mobiler via länken sparas informationen (hålltider, portkod, Wi-Fi och setlist) i vår databas. Som driftansvariga har vi teknisk tillgång till denna databas – skriv därför inte in känsliga personnummer eller lösenord.
+          </p>
         </section>
 
         {/* Footer */}

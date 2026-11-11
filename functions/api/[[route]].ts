@@ -35,6 +35,8 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 
 function jsonResponse(data: unknown, status = 200, cacheControl = 'no-store'): Response {
@@ -88,6 +90,20 @@ async function createUniquePublicId(db: D1Database, title: string): Promise<stri
   return `gig-${getRandomHex(8)}`;
 }
 
+function calculateExpiresAt(gigDate?: string, now = new Date()): string {
+  if (gigDate && /^\d{4}-\d{2}-\d{2}$/.test(gigDate.trim())) {
+    const [y, m, d] = gigDate.trim().split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    if (!Number.isNaN(date.getTime())) {
+      date.setUTCDate(date.getUTCDate() + 60);
+      return date.toISOString().slice(0, 10);
+    }
+  }
+  const fallback = new Date(now.getTime());
+  fallback.setUTCDate(fallback.getUTCDate() + 180);
+  return fallback.toISOString().slice(0, 10);
+}
+
 function timingSafeMatch(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let mismatch = 0;
@@ -107,7 +123,47 @@ function safeParseGigJson(jsonStr: string): GigData | null {
   }
 }
 
-export async function onRequest(context: EventContext): Promise<Response> {
+async function readSafeJsonBody(
+  request: Request,
+  maxBytes = 100 * 1024
+): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
+  const cl = request.headers.get('content-length');
+  if (cl && parseInt(cl, 10) > maxBytes) {
+    return {
+      ok: false,
+      response: jsonResponse({ error: 'För stort anrop (max 100 KB).' }, 413),
+    };
+  }
+
+  let text: string;
+  try {
+    text = await request.text();
+  } catch {
+    return {
+      ok: false,
+      response: jsonResponse({ error: 'Kunde inte läsa förfrågan.' }, 400),
+    };
+  }
+
+  if (new TextEncoder().encode(text).length > maxBytes) {
+    return {
+      ok: false,
+      response: jsonResponse({ error: 'För stort anrop (max 100 KB).' }, 413),
+    };
+  }
+
+  try {
+    const data = JSON.parse(text);
+    return { ok: true, data };
+  } catch {
+    return {
+      ok: false,
+      response: jsonResponse({ error: 'Ogiltig JSON-data.' }, 400),
+    };
+  }
+}
+
+async function handleRequest(context: EventContext): Promise<Response> {
   const { request, env, params } = context;
   const url = new URL(request.url);
   const route = params.route || [];
@@ -232,14 +288,12 @@ export async function onRequest(context: EventContext): Promise<Response> {
 
   // Route: POST /api/gigs
   if (method === 'POST' && route.length === 1 && route[0] === 'gigs') {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return jsonResponse({ error: 'Ogiltig JSON-data.' }, 400);
+    const parseRes = await readSafeJsonBody(request);
+    if (!parseRes.ok) {
+      return parseRes.response;
     }
 
-    const validation = validateAndSanitizeGigInput(body);
+    const validation = validateAndSanitizeGigInput(parseRes.data);
     if (!validation.valid || !validation.data) {
       return jsonResponse({ error: validation.error || 'Ogiltig indata.' }, 400);
     }
@@ -247,6 +301,7 @@ export async function onRequest(context: EventContext): Promise<Response> {
     const publicId = await createUniquePublicId(env.DB, validation.data.title || validation.data.ensemble || 'gig');
     const adminToken = generateAdminToken();
     const now = new Date().toISOString();
+    const expiresAt = calculateExpiresAt(validation.data.date);
 
     const storedData: GigData = {
       ...validation.data,
@@ -255,9 +310,9 @@ export async function onRequest(context: EventContext): Promise<Response> {
     };
 
     await env.DB.prepare(
-      'INSERT INTO gigs (public_id, admin_token, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO gigs (public_id, admin_token, data_json, created_at, updated_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)'
     )
-      .bind(publicId, adminToken, JSON.stringify(storedData), now, now)
+      .bind(publicId, adminToken, JSON.stringify(storedData), now, now, expiresAt)
       .run();
 
     return jsonResponse({ ...storedData, adminToken }, 201);
@@ -270,16 +325,60 @@ export async function onRequest(context: EventContext): Promise<Response> {
       return jsonResponse({ error: 'Ogiltig administratörslänk.' }, 400);
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return jsonResponse({ error: 'Ogiltig JSON-data.' }, 400);
+    const parseRes = await readSafeJsonBody(request);
+    if (!parseRes.ok) {
+      return parseRes.response;
     }
 
-    const validation = validateAndSanitizeGigInput(body);
+    const validation = validateAndSanitizeGigInput(parseRes.data);
     if (!validation.valid || !validation.data) {
       return jsonResponse({ error: validation.error || 'Ogiltig indata.' }, 400);
+    }
+
+    const ifMatch = request.headers.get('if-match');
+    const expectedUpdatedAt = ifMatch ? ifMatch.replace(/^"|"$/g, '').trim() : undefined;
+
+    const row = await env.DB.prepare(
+      'SELECT public_id, admin_token, data_json, updated_at FROM gigs WHERE admin_token = ?'
+    )
+      .bind(adminToken)
+      .first<{ public_id: string; admin_token: string; data_json: string; updated_at: string }>();
+
+    if (!row || !timingSafeMatch(row.admin_token, adminToken)) {
+      return jsonResponse({ error: 'Kunde inte hitta gigget för denna administratörslänk.' }, 404);
+    }
+
+    if (expectedUpdatedAt && row.updated_at !== expectedUpdatedAt) {
+      const current = safeParseGigJson(row.data_json);
+      return jsonResponse(
+        {
+          error: 'Körschemat har uppdaterats av någon annan sedan du öppnade det.',
+          current: current ? { ...current, publicId: row.public_id, updatedAt: row.updated_at } : undefined,
+        },
+        409
+      );
+    }
+
+    const now = new Date().toISOString();
+    const expiresAt = calculateExpiresAt(validation.data.date);
+    const updatedData: GigData = {
+      ...validation.data,
+      publicId: row.public_id,
+      updatedAt: now,
+    };
+
+    await env.DB.prepare('UPDATE gigs SET data_json = ?, updated_at = ?, expires_at = ? WHERE admin_token = ?')
+      .bind(JSON.stringify(updatedData), now, expiresAt, adminToken)
+      .run();
+
+    return jsonResponse({ ...updatedData, adminToken });
+  }
+
+  // Route: DELETE /api/gigs/admin/:adminToken
+  if (method === 'DELETE' && route.length === 3 && route[0] === 'gigs' && route[1] === 'admin') {
+    const adminToken = route[2];
+    if (!isValidIdentifier(adminToken, 80)) {
+      return jsonResponse({ error: 'Ogiltig administratörslänk.' }, 400);
     }
 
     const row = await env.DB.prepare(
@@ -292,19 +391,18 @@ export async function onRequest(context: EventContext): Promise<Response> {
       return jsonResponse({ error: 'Kunde inte hitta gigget för denna administratörslänk.' }, 404);
     }
 
-    const now = new Date().toISOString();
-    const updatedData: GigData = {
-      ...validation.data,
-      publicId: row.public_id,
-      updatedAt: now,
-    };
-
-    await env.DB.prepare('UPDATE gigs SET data_json = ?, updated_at = ? WHERE admin_token = ?')
-      .bind(JSON.stringify(updatedData), now, adminToken)
-      .run();
-
-    return jsonResponse({ ...updatedData, adminToken });
+    await env.DB.prepare('DELETE FROM gigs WHERE admin_token = ?').bind(adminToken).run();
+    return jsonResponse({ success: true, message: 'Körschemat har raderats permanent.' });
   }
 
   return jsonResponse({ error: 'Endpoint hittades inte.' }, 404);
+}
+
+export async function onRequest(context: EventContext): Promise<Response> {
+  try {
+    return await handleRequest(context);
+  } catch (err) {
+    console.error('Unhandled Pages Function error:', err);
+    return jsonResponse({ error: 'Ett internt serverfel uppstod. Försök igen om en stund.' }, 500);
+  }
 }

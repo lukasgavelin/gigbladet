@@ -58,6 +58,25 @@ export function formatSwedishDate(dateStr: string): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+export const MIDNIGHT_ROLLOVER_MINUTES = 6 * 60; // 06:00
+export const DAY_MINUTES = 24 * 60; // 1440
+
+export function hasEveningScheduleItems(schedule: ScheduleItem[]): boolean {
+  return schedule.some((item) => {
+    const m = parseTimeToMinutes(item.time);
+    return m !== null && m >= 12 * 60;
+  });
+}
+
+export function scheduleSortMinutes(timeStr?: string, hasEvening = false): number {
+  const m = parseTimeToMinutes(timeStr);
+  if (m === null) return 9999;
+  if (hasEvening && m < MIDNIGHT_ROLLOVER_MINUTES) {
+    return m + DAY_MINUTES;
+  }
+  return m;
+}
+
 export function evaluateSchedule(
   schedule: ScheduleItem[],
   gigDateStr: string,
@@ -67,10 +86,9 @@ export function evaluateSchedule(
   items: EvaluatedScheduleItem[];
   pulse: LivePulseInfo;
 } {
+  const hasEvening = hasEveningScheduleItems(schedule);
   const sorted = [...schedule].sort((a, b) => {
-    const ma = parseTimeToMinutes(a.time) ?? 9999;
-    const mb = parseTimeToMinutes(b.time) ?? 9999;
-    return ma - mb;
+    return scheduleSortMinutes(a.time, hasEvening) - scheduleSortMinutes(b.time, hasEvening);
   });
 
   if (sorted.length === 0) {
@@ -90,18 +108,44 @@ export function evaluateSchedule(
   const nowDay = String(now.getDate()).padStart(2, '0');
   const todayStr = `${nowYear}-${nowMonth}-${nowDay}`;
 
-  const isToday = forceSameDaySimulation || gigDateStr === todayStr;
-  const isFutureDate = !isToday && gigDateStr > todayStr;
-  const isPastDate = !isToday && gigDateStr < todayStr;
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const isYesterdayGigEarlyMorning =
+    hasEvening &&
+    now.getHours() < 6 &&
+    gigDateStr === yesterdayStr;
+
+  const isToday = forceSameDaySimulation || gigDateStr === todayStr || isYesterdayGigEarlyMorning;
+  const isFutureDate = !isToday && gigDateStr > todayStr;
+  const isPastDate = !isToday && !isYesterdayGigEarlyMorning && gigDateStr < todayStr;
+
+  let effectiveNowMinutes = now.getHours() * 60 + now.getMinutes();
+  if (hasEvening && effectiveNowMinutes < MIDNIGHT_ROLLOVER_MINUTES && isToday) {
+    effectiveNowMinutes += DAY_MINUTES;
+  }
 
   // Compute start and end minutes for each item
   const rawEvaluated = sorted.map((item, idx) => {
-    const startMinutes = parseTimeToMinutes(item.time) ?? 0;
-    const explicitEnd = parseTimeToMinutes(item.endTime);
-    const nextItemStart =
+    let startMinutes = parseTimeToMinutes(item.time) ?? 0;
+    if (hasEvening && startMinutes < MIDNIGHT_ROLLOVER_MINUTES) {
+      startMinutes += DAY_MINUTES;
+    }
+
+    let explicitEnd = parseTimeToMinutes(item.endTime);
+    if (explicitEnd !== null) {
+      if (hasEvening && explicitEnd < MIDNIGHT_ROLLOVER_MINUTES) {
+        explicitEnd += DAY_MINUTES;
+      } else if (explicitEnd < startMinutes) {
+        explicitEnd += DAY_MINUTES;
+      }
+    }
+
+    let nextItemStart =
       idx + 1 < sorted.length ? parseTimeToMinutes(sorted[idx + 1].time) : null;
+    if (nextItemStart !== null && hasEvening && nextItemStart < MIDNIGHT_ROLLOVER_MINUTES) {
+      nextItemStart += DAY_MINUTES;
+    }
 
     let endMinutes: number;
     if (explicitEnd !== null && explicitEnd > startMinutes) {
@@ -116,8 +160,8 @@ export function evaluateSchedule(
       ...item,
       startMinutes,
       endMinutes,
-      minutesUntilStart: startMinutes - nowMinutes,
-      minutesUntilEnd: endMinutes - nowMinutes,
+      minutesUntilStart: startMinutes - effectiveNowMinutes,
+      minutesUntilEnd: endMinutes - effectiveNowMinutes,
       status: 'upcoming' as ItemTimeStatus,
     };
   });
@@ -155,23 +199,23 @@ export function evaluateSchedule(
     };
   }
 
-  // Same day (today or simulated gig day)
+  // Same day (today, simulated gig day, or morning after with evening gig)
   let foundCurrent = false;
   let foundNext = false;
 
   const items: EvaluatedScheduleItem[] = rawEvaluated.map((item) => {
-    if (nowMinutes >= item.endMinutes) {
+    if (effectiveNowMinutes >= item.endMinutes) {
       return { ...item, status: 'past' };
     }
-    if (nowMinutes >= item.startMinutes && nowMinutes < item.endMinutes && !foundCurrent) {
+    if (effectiveNowMinutes >= item.startMinutes && effectiveNowMinutes < item.endMinutes && !foundCurrent) {
       foundCurrent = true;
       return { ...item, status: 'current' };
     }
-    if (nowMinutes < item.startMinutes && !foundCurrent && !foundNext) {
+    if (effectiveNowMinutes < item.startMinutes && !foundCurrent && !foundNext) {
       foundNext = true;
       return { ...item, status: 'next' };
     }
-    if (nowMinutes < item.startMinutes && foundCurrent && !foundNext) {
+    if (effectiveNowMinutes < item.startMinutes && foundCurrent && !foundNext) {
       foundNext = true;
       return { ...item, status: 'next' };
     }
@@ -180,7 +224,7 @@ export function evaluateSchedule(
 
   const currentItem = items.find((i) => i.status === 'current');
   const nextItem = items.find((i) => i.status === 'next');
-  const upcomingConcert = items.find((i) => i.highlight && i.startMinutes > nowMinutes);
+  const upcomingConcert = items.find((i) => i.highlight && i.startMinutes > effectiveNowMinutes);
 
   const concertCountdownText =
     upcomingConcert && upcomingConcert.id !== nextItem?.id

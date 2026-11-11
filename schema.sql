@@ -6,7 +6,9 @@ CREATE TABLE IF NOT EXISTS gigs (
   admin_token TEXT UNIQUE NOT NULL,
   data_json TEXT NOT NULL,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  expires_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_gigs_admin_token ON gigs(admin_token);
+CREATE INDEX IF NOT EXISTS idx_gigs_expires_at ON gigs(expires_at);

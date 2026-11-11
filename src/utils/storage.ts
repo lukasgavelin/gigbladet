@@ -75,6 +75,30 @@ export function clearAdminDraft(key: string): void {
   }
 }
 
+export function removePublicGigCache(publicId: string): void {
+  try {
+    localStorage.removeItem(`${PUBLIC_CACHE_PREFIX}${publicId}`);
+  } catch {
+    // Ignore
+  }
+}
+
+export function forgetGig(publicId: string, adminToken?: string): void {
+  try {
+    localStorage.removeItem(`${PUBLIC_CACHE_PREFIX}${publicId}`);
+    if (adminToken) {
+      localStorage.removeItem(`${ADMIN_DRAFT_PREFIX}${adminToken}`);
+    }
+    const existing = getRecentGigs();
+    const updated = existing.filter(
+      (e) => e.publicId !== publicId && (!adminToken || e.adminToken !== adminToken)
+    );
+    localStorage.setItem(RECENT_GIGS_KEY, JSON.stringify(updated));
+  } catch {
+    // Ignore
+  }
+}
+
 export function recordRecentGig(entry: RecentGigEntry): void {
   try {
     const existing = getRecentGigs();

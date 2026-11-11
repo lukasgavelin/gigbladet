@@ -7,6 +7,7 @@ import {
   getGigByAdminToken,
   createGig,
   updateGigByAdminToken,
+  deleteGigByAdminToken,
 } from './db.ts';
 import { isValidIdentifier, validateAndSanitizeGigInput } from './validation.ts';
 import { createRateLimiter } from './rateLimit.ts';
@@ -90,7 +91,7 @@ app.post('/api/gigs', writeLimiter, (req, res) => {
   }
 });
 
-// Update existing gig via adminToken
+// Update existing gig via adminToken (with optimistic locking)
 app.put('/api/gigs/admin/:adminToken', writeLimiter, (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const { adminToken } = req.params;
@@ -105,17 +106,52 @@ app.put('/api/gigs/admin/:adminToken', writeLimiter, (req, res) => {
     return;
   }
 
+  const ifMatchHeader = req.headers['if-match'];
+  const expectedUpdatedAt =
+    typeof ifMatchHeader === 'string' ? ifMatchHeader.replace(/^"|"$/g, '').trim() : undefined;
+
   try {
-    const updated = updateGigByAdminToken(adminToken, validation.data);
-    if (!updated) {
+    const result = updateGigByAdminToken(adminToken, validation.data, expectedUpdatedAt);
+    if (!result) {
       res.status(404).json({ error: 'Kunde inte hitta gigget för denna administratörslänk.' });
       return;
     }
 
-    res.json(updated);
+    if ('conflict' in result && result.conflict) {
+      res.status(409).json({
+        error: 'Körschemat har uppdaterats av någon annan sedan du öppnade det.',
+        current: result.current,
+      });
+      return;
+    }
+
+    res.json(result);
   } catch (err) {
     console.error('Error updating gig:', err);
     res.status(500).json({ error: 'Kunde inte uppdatera körschemat.' });
+  }
+});
+
+// Delete existing gig permanently via adminToken
+app.delete('/api/gigs/admin/:adminToken', writeLimiter, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const { adminToken } = req.params;
+  if (!isValidIdentifier(adminToken, 80)) {
+    res.status(400).json({ error: 'Ogiltig administratörslänk.' });
+    return;
+  }
+
+  try {
+    const deleted = deleteGigByAdminToken(adminToken);
+    if (!deleted) {
+      res.status(404).json({ error: 'Körschemat hittades inte eller är redan raderat.' });
+      return;
+    }
+
+    res.json({ success: true, message: 'Körschemat har raderats permanent.' });
+  } catch (err) {
+    console.error('Error deleting gig:', err);
+    res.status(500).json({ error: 'Kunde inte radera körschemat.' });
   }
 });
 

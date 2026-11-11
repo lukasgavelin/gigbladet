@@ -1,0 +1,19 @@
+# Standardize line endings on LF across all systems
+* text=auto eol=lf
+
+# Explicit text files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.toml text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.ico binary
+*.db binary

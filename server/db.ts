@@ -6,12 +6,15 @@ import type { GigData } from '../src/types/gig.ts';
 import { DEMO_GIG_SOUL, DEMO_GIG_CHOIR, getTodayDateString } from '../src/data/demoData.ts';
 import { isValidIdentifier, type SanitizedGigInput } from './validation.ts';
 
+const DB_TARGET = process.env.GIGBLADET_DB_PATH;
+const isMemory = DB_TARGET === ':memory:';
+
 const DATA_DIR = path.resolve(process.cwd(), 'data');
-if (!fs.existsSync(DATA_DIR)) {
+if (!isMemory && !fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
 }
 
-const DB_PATH = path.join(DATA_DIR, 'gigbladet.db');
+const DB_PATH = isMemory ? ':memory:' : (DB_TARGET || path.join(DATA_DIR, 'gigbladet.db'));
 const db = new DatabaseSync(DB_PATH);
 
 db.exec(`
@@ -24,16 +27,25 @@ db.exec(`
     admin_token TEXT UNIQUE NOT NULL,
     data_json TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    expires_at TEXT
   );
   CREATE INDEX IF NOT EXISTS idx_gigs_admin_token ON gigs(admin_token);
+  CREATE INDEX IF NOT EXISTS idx_gigs_expires_at ON gigs(expires_at);
 `);
+
+try {
+  db.exec('ALTER TABLE gigs ADD COLUMN expires_at TEXT;');
+} catch {
+  // Column already exists
+}
 
 interface GigRow {
   public_id: string;
   admin_token?: string;
   data_json: string;
   updated_at: string;
+  expires_at?: string | null;
 }
 
 const MAX_SLUG_ATTEMPTS = 5;
@@ -150,10 +162,33 @@ export function getGigByAdminToken(adminToken: string): GigData | null {
   };
 }
 
+export function calculateExpiresAt(gigDate?: string, now = new Date()): string {
+  if (gigDate && /^\d{4}-\d{2}-\d{2}$/.test(gigDate.trim())) {
+    const [y, m, d] = gigDate.trim().split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    if (!Number.isNaN(date.getTime())) {
+      date.setUTCDate(date.getUTCDate() + 60);
+      return date.toISOString().slice(0, 10);
+    }
+  }
+  const fallback = new Date(now.getTime());
+  fallback.setUTCDate(fallback.getUTCDate() + 180);
+  return fallback.toISOString().slice(0, 10);
+}
+
+export function purgeExpiredGigs(now = new Date()): number {
+  const nowIso = now.toISOString().slice(0, 10);
+  const info = db
+    .prepare('DELETE FROM gigs WHERE expires_at IS NOT NULL AND expires_at < ?')
+    .run(nowIso);
+  return Number(info.changes);
+}
+
 export function createGig(input: SanitizedGigInput): GigData {
   const publicId = createUniquePublicId(input.title || input.ensemble || 'gig');
   const adminToken = generateAdminToken();
   const now = new Date().toISOString();
+  const expiresAt = calculateExpiresAt(input.date);
 
   const storedData: GigData = {
     ...input,
@@ -162,8 +197,8 @@ export function createGig(input: SanitizedGigInput): GigData {
   };
 
   db.prepare(
-    'INSERT INTO gigs (public_id, admin_token, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(publicId, adminToken, JSON.stringify(storedData), now, now);
+    'INSERT INTO gigs (public_id, admin_token, data_json, created_at, updated_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(publicId, adminToken, JSON.stringify(storedData), now, now, expiresAt);
 
   return {
     ...storedData,
@@ -173,26 +208,39 @@ export function createGig(input: SanitizedGigInput): GigData {
 
 export function updateGigByAdminToken(
   adminToken: string,
-  input: SanitizedGigInput
-): GigData | null {
+  input: SanitizedGigInput,
+  expectedUpdatedAt?: string
+): (GigData & { conflict?: false }) | { conflict: true; current: GigData } | null {
   const existing = getGigByAdminToken(adminToken);
   if (!existing) return null;
 
+  if (expectedUpdatedAt && existing.updatedAt !== expectedUpdatedAt) {
+    return { conflict: true, current: existing };
+  }
+
   const now = new Date().toISOString();
+  const expiresAt = calculateExpiresAt(input.date);
   const updatedData: GigData = {
     ...input,
     publicId: existing.publicId,
     updatedAt: now,
   };
 
-  db.prepare('UPDATE gigs SET data_json = ?, updated_at = ? WHERE admin_token = ?').run(
-    JSON.stringify(updatedData),
-    now,
-    adminToken
-  );
+  db.prepare(
+    'UPDATE gigs SET data_json = ?, updated_at = ?, expires_at = ? WHERE admin_token = ?'
+  ).run(JSON.stringify(updatedData), now, expiresAt, adminToken);
 
   return {
     ...updatedData,
     adminToken,
   };
+}
+
+export function deleteGigByAdminToken(adminToken: string): boolean {
+  if (!isValidIdentifier(adminToken, 80)) return false;
+  const existing = getGigByAdminToken(adminToken);
+  if (!existing) return false;
+
+  const info = db.prepare('DELETE FROM gigs WHERE admin_token = ?').run(adminToken);
+  return Number(info.changes) > 0;
 }

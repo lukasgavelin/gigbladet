@@ -200,37 +200,69 @@ export interface MetronomeController {
 
 /**
  * Starts a metronome ticker that plays an audio click at the given BPM.
- * Calls `onTick` callback in sync with each beat.
+ * Uses Web Audio lookahead scheduling ("A Tale of Two Clocks") for jitter-free,
+ * sample-accurate audio timing even when CPU or UI threads are busy.
  */
 export function startMetronome(
   bpm: number,
   onTick?: (beatIndex: number) => void
 ): MetronomeController {
   const ctx = getAudioContext();
-  const intervalMs = Math.round(60000 / Math.max(30, Math.min(300, bpm)));
+  if (ctx && ctx.state === 'suspended') {
+    void ctx.resume();
+  }
+
+  const safeBpm = Math.max(30, Math.min(300, bpm));
+  const secondsPerBeat = 60 / safeBpm;
+  const LOOKAHEAD_INTERVAL_MS = 25;
+  const SCHEDULE_AHEAD_SEC = 0.12; // 120ms lookahead window
+
   let isRunning = true;
   let beatCount = 0;
-  let intervalId: ReturnType<typeof setInterval> | null = null;
+  let timerId: ReturnType<typeof setInterval> | null = null;
+  const timeouts: Array<ReturnType<typeof setTimeout>> = [];
 
-  const triggerBeat = () => {
+  let nextNoteTime = ctx ? ctx.currentTime : 0;
+
+  const scheduler = () => {
     if (!isRunning) return;
-    if (ctx && ctx.state === 'running') {
-      scheduleClick(ctx, ctx.currentTime);
+
+    if (!ctx) {
+      // Fallback for environments without AudioContext (e.g. testing)
+      if (onTick) onTick(beatCount);
+      beatCount++;
+      return;
     }
-    if (onTick) {
-      onTick(beatCount);
+
+    while (nextNoteTime < ctx.currentTime + SCHEDULE_AHEAD_SEC) {
+      const currentBeat = beatCount;
+      const scheduledTime = nextNoteTime;
+
+      scheduleClick(ctx, scheduledTime);
+
+      if (onTick) {
+        const delayMs = Math.max(0, (scheduledTime - ctx.currentTime) * 1000);
+        const timeout = setTimeout(() => {
+          if (isRunning) {
+            onTick(currentBeat);
+          }
+        }, delayMs);
+        timeouts.push(timeout);
+      }
+
+      nextNoteTime += secondsPerBeat;
+      beatCount++;
     }
-    beatCount++;
   };
 
-  // Immediate first beat
-  triggerBeat();
-  intervalId = setInterval(triggerBeat, intervalMs);
+  scheduler();
+  timerId = setInterval(scheduler, LOOKAHEAD_INTERVAL_MS);
 
   return {
     stop: () => {
       isRunning = false;
-      if (intervalId) clearInterval(intervalId);
+      if (timerId) clearInterval(timerId);
+      for (const t of timeouts) clearTimeout(t);
     },
   };
 }

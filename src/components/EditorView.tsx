@@ -16,6 +16,7 @@ import {
   Star,
   Trash,
   Users,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import type {
   ContactPerson,
@@ -24,16 +25,25 @@ import type {
   ScheduleItem,
   SetlistItem,
 } from '../types/gig.ts';
-import { createEmptyGigFormData } from '../data/demoData.ts';
+import {
+  createEmptyGigFormData,
+  DEMO_GIGS,
+  getTodayDateString,
+} from '../data/demoData.ts';
 import {
   clearAdminDraft,
+  forgetGig,
   loadAdminDraft,
   recordRecentGig,
   saveAdminDraft,
   savePublicGigCache,
 } from '../utils/storage.ts';
-import { parseTimeToMinutes } from '../utils/time.ts';
-import { saveGigToServer } from '../services/gigApi.ts';
+import {
+  hasEveningScheduleItems,
+  parseTimeToMinutes,
+  scheduleSortMinutes,
+} from '../utils/time.ts';
+import { ApiError, deleteGigOnServer, saveGigToServer } from '../services/gigApi.ts';
 import { useCopyFeedback } from '../hooks/useCopyFeedback.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
 import { MusicianView } from './MusicianView.tsx';
@@ -74,7 +84,18 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const draftKey = adminToken || 'new_gig_v2';
 
   const getInitialFormState = (): Omit<GigData, 'publicId' | 'updatedAt'> => {
+    const savedDraft = loadAdminDraft(draftKey);
+
     if (initialGig) {
+      if (
+        savedDraft?.data &&
+        savedDraft.savedAt &&
+        initialGig.updatedAt &&
+        new Date(savedDraft.savedAt).getTime() > new Date(initialGig.updatedAt).getTime()
+      ) {
+        return savedDraft.data;
+      }
+
       return {
         adminToken: initialGig.adminToken || adminToken,
         title: initialGig.title,
@@ -94,13 +115,41 @@ export const EditorView: React.FC<EditorViewProps> = ({
       };
     }
 
-    const savedDraft = loadAdminDraft(draftKey);
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const templateKey = searchParams?.get('mall');
+    if (templateKey && DEMO_GIGS[templateKey]) {
+      const template = DEMO_GIGS[templateKey];
+      return {
+        ...template,
+        title: `${template.title} (Kopia)`,
+        date: getTodayDateString(),
+        schedule: template.schedule.map((s) => ({ ...s, id: makeId('sch') })),
+        contacts: template.contacts.map((c) => ({ ...c, id: makeId('cnt') })),
+        backstage: {
+          ...template.backstage,
+          dressCodeColors: template.backstage.dressCodeColors.map((cl) => ({ ...cl, id: makeId('clr') })),
+        },
+        setlist: template.setlist.map((sl) => ({ ...sl, id: makeId('sng') })),
+      };
+    }
+
     if (savedDraft?.data) {
       return savedDraft.data;
     }
 
     return createEmptyGigFormData();
   };
+
+  const [hasRestoredDraft, setHasRestoredDraft] = useState<boolean>(() => {
+    if (!initialGig) return false;
+    const savedDraft = loadAdminDraft(draftKey);
+    return Boolean(
+      savedDraft?.data &&
+        savedDraft.savedAt &&
+        initialGig.updatedAt &&
+        new Date(savedDraft.savedAt).getTime() > new Date(initialGig.updatedAt).getTime()
+    );
+  });
 
   const [formData, setFormData] = useState<Omit<GigData, 'publicId' | 'updatedAt'>>(
     getInitialFormState
@@ -110,8 +159,11 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const [savedGig, setSavedGig] = useState<GigData | null>(initialGig || null);
   const effectiveAdminToken = savedGig?.adminToken || adminToken;
   const [saveState, setSaveState] = useState<
-    'idle' | 'saving' | 'saved' | 'offline_queued' | 'error'
+    'idle' | 'saving' | 'saved' | 'offline_queued' | 'error' | 'conflict'
   >(isEditingExisting ? 'saved' : 'idle');
+  const [conflictGig, setConflictGig] = useState<GigData | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const { copiedKey: copiedInline, copyWithFeedback: copyInlineLink } =
     useCopyFeedback<'public' | 'admin'>(2000);
@@ -127,7 +179,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
   };
 
   const handleSave = useCallback(
-    async (openShareAfterCreate = true) => {
+    async (openShareAfterCreate = true, forceOverwrite = false) => {
       if (!formData.title.trim()) {
         setValidationMessage('Fyll i evenemangets namn längst upp innan du sparar.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -144,9 +196,17 @@ export const EditorView: React.FC<EditorViewProps> = ({
       setSaveState('saving');
       try {
         const isUpdate = Boolean(effectiveAdminToken);
-        const saved = await saveGigToServer(formData, effectiveAdminToken);
+        const expectedUpdatedAt = forceOverwrite
+          ? undefined
+          : savedGig?.updatedAt || initialGig?.updatedAt;
+        const saved = await saveGigToServer(
+          formData,
+          effectiveAdminToken,
+          expectedUpdatedAt
+        );
 
         setSavedGig(saved);
+        setConflictGig(null);
         setSaveState('saved');
         clearAdminDraft(draftKey);
         savePublicGigCache(saved);
@@ -170,6 +230,15 @@ export const EditorView: React.FC<EditorViewProps> = ({
       } catch (err) {
         if (!navigator.onLine) {
           setSaveState('offline_queued');
+        } else if (err instanceof ApiError && err.status === 409) {
+          setSaveState('conflict');
+          const serverCurrent = (err.data as { current?: GigData })?.current;
+          if (serverCurrent) {
+            setConflictGig(serverCurrent);
+          }
+          setValidationMessage(
+            'Någon annan har sparat ändringar i detta körschema sedan du öppnade det. Välj hur du vill hantera konflikten nedan.'
+          );
         } else {
           setSaveState('error');
           setValidationMessage(
@@ -178,18 +247,45 @@ export const EditorView: React.FC<EditorViewProps> = ({
         }
       }
     },
-    [draftKey, effectiveAdminToken, formData, onGigSaved]
+    [draftKey, effectiveAdminToken, formData, initialGig?.updatedAt, onGigSaved, savedGig?.updatedAt]
   );
+
+  const handleDeleteGig = async () => {
+    if (!effectiveAdminToken || !savedGig) return;
+    setIsDeleting(true);
+    try {
+      await deleteGigOnServer(effectiveAdminToken);
+      forgetGig(savedGig.publicId, effectiveAdminToken);
+      onNavigate('/');
+    } catch (err) {
+      setIsDeleting(false);
+      setValidationMessage(
+        err instanceof Error ? err.message : 'Kunde inte radera körschemat.'
+      );
+    }
+  };
 
   useEffect(() => {
     const handleOnline = () => {
-      if (effectiveAdminToken && saveState === 'offline_queued') {
+      if (saveState === 'offline_queued') {
         void handleSave(false);
       }
     };
     window.addEventListener('online', handleOnline);
     return () => window.removeEventListener('online', handleOnline);
-  }, [effectiveAdminToken, handleSave, saveState]);
+  }, [handleSave, saveState]);
+
+  useEffect(() => {
+    const isDirty = saveState === 'idle' && formData.title.trim().length > 0;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [formData.title, saveState]);
 
   // Schedule list helpers
   const updateScheduleItem = (id: string, patch: Partial<ScheduleItem>) => {
@@ -236,12 +332,17 @@ export const EditorView: React.FC<EditorViewProps> = ({
   };
 
   const sortScheduleChronologically = () => {
-    setFormData((prev) => ({
-      ...prev,
-      schedule: [...prev.schedule].sort(
-        (a, b) => (parseTimeToMinutes(a.time) ?? 9999) - (parseTimeToMinutes(b.time) ?? 9999)
-      ),
-    }));
+    setFormData((prev) => {
+      const hasEvening = hasEveningScheduleItems(prev.schedule);
+      return {
+        ...prev,
+        schedule: [...prev.schedule].sort(
+          (a, b) =>
+            scheduleSortMinutes(a.time, hasEvening) -
+            scheduleSortMinutes(b.time, hasEvening)
+        ),
+      };
+    });
     if (effectiveAdminToken) setSaveState('idle');
   };
 
@@ -496,6 +597,96 @@ export const EditorView: React.FC<EditorViewProps> = ({
         {validationMessage && (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs font-medium text-amber-800 dark:text-amber-300">
             {validationMessage}
+          </div>
+        )}
+
+        {/* Ändringskonflikt – någon annan har sparat */}
+        {saveState === 'conflict' && conflictGig && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5 space-y-3">
+            <div className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-200 text-sm">
+              <WarningCircle weight="duotone" className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <span>Ändringskonflikt – någon annan har uppdaterat gigget</span>
+            </div>
+            <p className="text-xs text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
+              En nyare version av detta körschema sparades kl{' '}
+              {conflictGig.updatedAt
+                ? new Date(conflictGig.updatedAt).toLocaleTimeString('sv-SE', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'nyss'}
+              . Du kan antingen hämta in deras ändringar eller skriva över med dina egna.
+            </p>
+            <div className="flex flex-wrap gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    adminToken: conflictGig.adminToken || effectiveAdminToken,
+                    title: conflictGig.title,
+                    ensemble: conflictGig.ensemble,
+                    date: conflictGig.date,
+                    venue: conflictGig.venue,
+                    address: conflictGig.address,
+                    generalNotes: conflictGig.generalNotes,
+                    schedule: conflictGig.schedule,
+                    contacts: conflictGig.contacts,
+                    backstage: conflictGig.backstage,
+                    setlistEnabled: conflictGig.setlistEnabled,
+                    setlist: conflictGig.setlist,
+                  });
+                  setSavedGig(conflictGig);
+                  setConflictGig(null);
+                  setSaveState('saved');
+                  setValidationMessage(null);
+                }}
+                className="rounded-full bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
+              >
+                Ladda deras version
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSave(false, true)}
+                className="rounded-full border border-amber-600/40 bg-white dark:bg-zinc-900 hover:bg-amber-50 dark:hover:bg-zinc-800 text-amber-900 dark:text-amber-200 font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
+              >
+                Skriv över med mina ändringar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Återställda lokala ändringar från utkast */}
+        {hasRestoredDraft && initialGig && (
+          <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4 flex flex-wrap items-center justify-between gap-3 text-xs text-sky-900 dark:text-sky-200">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-sky-500" />
+              <span>Osparade ändringar från en tidigare session återställdes automatiskt.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  adminToken: initialGig.adminToken || adminToken,
+                  title: initialGig.title,
+                  ensemble: initialGig.ensemble,
+                  date: initialGig.date,
+                  venue: initialGig.venue,
+                  address: initialGig.address,
+                  generalNotes: initialGig.generalNotes,
+                  schedule: initialGig.schedule,
+                  contacts: initialGig.contacts,
+                  backstage: initialGig.backstage,
+                  setlistEnabled: initialGig.setlistEnabled,
+                  setlist: initialGig.setlist,
+                });
+                clearAdminDraft(draftKey);
+                setHasRestoredDraft(false);
+                setSaveState('saved');
+              }}
+              className="font-medium underline hover:opacity-80 cursor-pointer"
+            >
+              Återställ serverns sparade version
+            </button>
           </div>
         )}
 
@@ -1267,6 +1458,59 @@ export const EditorView: React.FC<EditorViewProps> = ({
             Lägg till låt i setlisten
           </button>
         </section>
+
+        {/* Danger Zone: Permanent Deletion */}
+        {effectiveAdminToken && savedGig && (
+          <section className="rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 p-6 space-y-4">
+            <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-semibold text-sm">
+              <Trash weight="duotone" className="w-4 h-4" />
+              <span>Farozon – Radera körschema</span>
+            </div>
+            <p className="text-xs text-rose-800/80 dark:text-rose-300/80 leading-relaxed">
+              Om du raderar körschemat tas all data (hålltider, portkod, kontakter och setlist) bort permanent från servern. Länken slutar omedelbart att fungera för musikerna.
+            </p>
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="rounded-xl border border-rose-300 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-medium px-4 py-2 text-xs transition-colors cursor-pointer"
+              >
+                Radera körschema permanent...
+              </button>
+            ) : (
+              <div className="p-4 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-zinc-900 space-y-3">
+                <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  Är du helt säker på att du vill radera "{savedGig.title || 'detta gig'}"?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => void handleDeleteGig()}
+                    className="rounded-full bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2 text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Spinner className="w-3.5 h-3.5 animate-spin" />
+                        Raderar...
+                      </>
+                    ) : (
+                      'Ja, radera permanent'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Bottom Primary CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">

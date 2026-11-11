@@ -5,9 +5,12 @@ import {
   validateAndSanitizeGigInput,
 } from '../server/validation.ts';
 import {
+  calculateExpiresAt,
   createGig,
+  deleteGigByAdminToken,
   getGigByAdminToken,
   getGigByPublicId,
+  purgeExpiredGigs,
   updateGigByAdminToken,
 } from '../server/db.ts';
 import { generateGigCalendarIcs } from '../src/utils/calendar.ts';
@@ -117,15 +120,77 @@ describe('Database & Admin Token Security (server/db.ts)', () => {
     assert.equal(getGigByAdminToken(`${created.adminToken}x`), null);
 
     // Valid token updates the gig
-    const updated = updateGigByAdminToken(created.adminToken, {
+    const updated = updateGigByAdminToken(created.adminToken!, {
       ...validated.data,
       title: 'Säkerhetsuppdaterat Gig',
     });
-    assert.equal(updated?.title, 'Säkerhetsuppdaterat Gig');
+    assert.ok(updated && !('conflict' in updated));
+    assert.equal(updated.title, 'Säkerhetsuppdaterat Gig');
 
     const publicView = getGigByPublicId(created.publicId);
     assert.equal(publicView?.title, 'Säkerhetsuppdaterat Gig');
     assert.equal(publicView?.adminToken, undefined);
+  });
+
+  it('supports optimistic locking and detects write conflicts', () => {
+    const validated = validateAndSanitizeGigInput(DEMO_GIG_CHOIR);
+    assert.ok(validated.data);
+    const created = createGig(validated.data);
+    assert.ok(created.adminToken);
+
+    // Stale update with mismatched expectedUpdatedAt must return conflict
+    const conflictResult = updateGigByAdminToken(
+      created.adminToken!,
+      { ...validated.data, title: 'Konflikttest' },
+      '2020-01-01T00:00:00.000Z'
+    );
+    assert.ok(conflictResult);
+    assert.equal('conflict' in conflictResult && conflictResult.conflict, true);
+
+    // Matching expectedUpdatedAt succeeds
+    const successResult = updateGigByAdminToken(
+      created.adminToken!,
+      { ...validated.data, title: 'Godkänd Uppdatering' },
+      created.updatedAt
+    );
+    assert.ok(successResult && !('conflict' in successResult));
+    assert.equal(successResult.title, 'Godkänd Uppdatering');
+  });
+
+  it('deletes gigs permanently via admin token and prevents unauthorized deletions', () => {
+    const validated = validateAndSanitizeGigInput(DEMO_GIG_CHOIR);
+    assert.ok(validated.data);
+    const created = createGig(validated.data);
+    assert.ok(created.adminToken);
+
+    // Wrong token cannot delete
+    assert.equal(deleteGigByAdminToken(`${created.adminToken}invalid`), false);
+
+    // Valid token deletes gig
+    assert.equal(deleteGigByAdminToken(created.adminToken!), true);
+
+    // Both public and admin endpoints return null
+    assert.equal(getGigByPublicId(created.publicId), null);
+    assert.equal(getGigByAdminToken(created.adminToken!), null);
+  });
+
+  it('calculates 60-day retention and purges expired gigs', () => {
+    const expiresAt = calculateExpiresAt('2026-06-01');
+    assert.equal(expiresAt, '2026-07-31');
+
+    // Test automatic purge
+    const validated = validateAndSanitizeGigInput({
+      ...DEMO_GIG_CHOIR,
+      date: '2020-01-01',
+    });
+    assert.ok(validated.data);
+    const created = createGig(validated.data);
+    assert.ok(getGigByPublicId(created.publicId));
+
+    // Purging with today's date should remove 2020 gig
+    const purgedCount = purgeExpiredGigs(new Date('2026-11-11'));
+    assert.ok(purgedCount >= 1);
+    assert.equal(getGigByPublicId(created.publicId), null);
   });
 });
 
@@ -180,6 +245,26 @@ describe('Schedule & Live-puls Evaluation (src/utils/time.ts)', () => {
     const resDuring = evaluateSchedule(demo.schedule, demo.date, duringSet1, true);
     assert.equal(resDuring.pulse.mode, 'live_now');
     assert.equal(resDuring.pulse.currentItem?.title, 'Set 1 (Konsertstart)');
+  });
+
+  it('correctly handles schedule items that rollover past midnight', () => {
+    const clubSchedule = [
+      { id: '1', time: '21:00', endTime: '22:00', title: 'Dörrar' },
+      { id: '2', time: '23:30', endTime: '00:30', title: 'Set 1' },
+      { id: '3', time: '01:00', endTime: '02:00', title: 'Set 2 (Natt)' },
+    ];
+
+    // At 23:45 on gig date -> Set 1 should be live_now
+    const duringSet1 = new Date('2026-10-30T23:45:00');
+    const res1 = evaluateSchedule(clubSchedule, '2026-10-30', duringSet1, true);
+    assert.equal(res1.pulse.mode, 'live_now');
+    assert.equal(res1.pulse.currentItem?.title, 'Set 1');
+
+    // At 01:15 on the day after (01:15 Saturday morning for Friday gig) -> Set 2 should be live_now
+    const duringSet2 = new Date('2026-10-31T01:15:00');
+    const res2 = evaluateSchedule(clubSchedule, '2026-10-30', duringSet2, false);
+    assert.equal(res2.pulse.mode, 'live_now');
+    assert.equal(res2.pulse.currentItem?.title, 'Set 2 (Natt)');
   });
 });
 

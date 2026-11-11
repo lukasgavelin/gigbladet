@@ -7,14 +7,14 @@ GigBladet samlar hålltider, live-puls, kontaktpersoner, portkoder, Wi-Fi, kläd
 ## Nyckelfunktioner
 
 - **Musiker-vy (`/g/:publicId`):**
- - Live-puls i realtid (*PÅGÅR NU*, *NÄSTA OM X MIN*, nedräkning).
- - Tidsreglage ("Testa tid") för att simulera speldagens hållpunkter.
- - 1-klicksknappar för Google Maps-vägbeskrivning, `.ics`-kalenderfil och telefonsamtal (`tel:`).
- - 1-klickskopiering för portkod och Wi-Fi-lösenord med tydlig statusindikator.
- - Klädkod med färgprover (hexkoder) och textuell instruktion.
- - Setlist med tonarter, solistnoteringar och visuell tempoblink (ljudlös BPM-metronom).
- - Fullt offline-stöd via Service Worker och `localStorage` – fungerar nere i logen även utan mobiltäckning.
- - Växla sömlöst mellan ljust och mörkt tema (ljust är förvalt).
+  - Live-puls i realtid (*PÅGÅR NU*, *NÄSTA OM X MIN*, nedräkning).
+  - Tidsreglage ("Testa tid") för att simulera speldagens hållpunkter.
+  - 1-klicksknappar för Google Maps-vägbeskrivning, `.ics`-kalenderfil och telefonsamtal (`tel:`).
+  - 1-klickskopiering för portkod och Wi-Fi-lösenord med tydlig statusindikator.
+  - Klädkod med färgprover (hexkoder) och textuell instruktion.
+  - Setlist med tonarter, solistnoteringar, stämpipa och metronom (ljud + visuell tempoblink).
+  - Fullt offline-stöd via Service Worker och `localStorage` – fungerar nere i logen även utan mobiltäckning.
+  - Växla sömlöst mellan ljust och mörkt tema (ljust är förvalt).
 
 - **Skapar- och administratörsvy (`/ny` & `/edit/:adminToken`):**
  - Startar i ett rent, tomt formulär utan malltvång.
@@ -49,7 +49,7 @@ Ett av GigBladets viktigaste designmål är att minimera datainsamling och frikt
 
 GigBladet är byggt som en hybridapplikation med stöd för både serverlös distribution på edge och lokal utveckling:
 
-- **Frontend:** React 19, TypeScript, Tailwind CSS v4, Lucide React, Vite 6.
+- **Frontend:** React 19, TypeScript, Tailwind CSS v4, Phosphor Icons, Vite 6.
 - **Produktionsmiljö (Serverless Edge):**
  - **Hosting:** [Cloudflare Pages](https://pages.cloudflare.com/) med global CDN.
  - **Edge API:** Cloudflare Pages Functions (`functions/api/[[route]].ts`) som körs i Cloudflares globala V8-runtime.
